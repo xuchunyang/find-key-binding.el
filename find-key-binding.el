@@ -31,19 +31,26 @@
 (require 'el-search-x)
 (require 'find-func)
 
+(defun find-key-binding--symbol-file (symbol)
+  (let ((file (symbol-file symbol)))
+    (when file
+      (find-library-name file))))
+
 ;;;###autoload
 (defun find-key-binding (key)
   "Find where binding of KEY is created."
   (interactive "kFind key binding: ")
-  (let* ((func (key-binding key))
-         (keymap (help--binding-locus key nil))
-         (files (delete-dups
-                 (delq nil
-                       (list (find-library-name (symbol-file func))
-                             (find-library-name (symbol-file keymap)))))))
-    (el-search-setup-search
-     (list '\` (list 'define-key ',_ (list '\, `(keys ,key)) `',func))
-     (lambda () (stream files)))))
+  (let* ((fun (key-binding key))
+         (map (help--binding-locus key nil))
+         (sources
+          (delete-dups
+           (delq nil
+                 (list (find-key-binding--symbol-file fun)
+                       (find-key-binding--symbol-file map))))))
+    (when sources
+      (el-search-setup-search
+       (list '\` (list 'define-key ',_ (list '\, `(keys ,key)) `',fun))
+       (lambda () (stream sources))))))
 
 (provide 'find-key-binding)
 
