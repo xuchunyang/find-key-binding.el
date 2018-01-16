@@ -31,6 +31,10 @@
 (require 'el-search-x)
 (require 'find-func)
 
+(defvar find-key-binding-extra-files
+  (list (find-library-name "bindings")
+        user-init-file))
+
 (defun find-key-binding--symbol-file (symbol)
   (let ((file (symbol-file symbol)))
     (when file
@@ -45,10 +49,10 @@
          (sources
           (delete-dups
            (delq nil
-                 (list (find-key-binding--symbol-file fun)
-                       (find-key-binding--symbol-file map)
-                       (find-library-name "bindings")
-                       user-init-file))))
+                 (append
+                  (list (find-key-binding--symbol-file fun)
+                        (find-key-binding--symbol-file map))
+                  find-key-binding-extra-files))))
          (key-desc (key-description key)))
     (when sources
       (el-search-setup-search
