@@ -46,10 +46,26 @@
           (delete-dups
            (delq nil
                  (list (find-key-binding--symbol-file fun)
-                       (find-key-binding--symbol-file map))))))
+                       (find-key-binding--symbol-file map)
+                       (find-library-name "bindings")
+                       user-init-file))))
+         (key-desc (key-description key)))
     (when sources
       (el-search-setup-search
-       (list '\` (list 'define-key ',_ (list '\, `(keys ,key)) `',fun))
+       (let ((patterns
+              (list
+               ;; FIXME I have to put this first to make it work
+               ;; (use-package find-key-binding :bind ("C-h C-b" . find-key-binding))
+               `'(,key-desc . ,fun)
+               ;; (define-key global-map "\C-s" 'isearch-forward)
+               `(l ^ 'define-key _ (keys ,key) '',fun $)
+               ;; (global-set-key [M-right]  'right-word)
+               (when (eq map 'global-map)
+                 `(l ^ 'global-set-key (keys ,key) '',fun $)))))
+         (setq patterns (delq nil patterns))
+         (if (< (length patterns) 2)
+             (car patterns)
+           (cons 'or patterns)))
        (lambda () (stream sources))))))
 
 (provide 'find-key-binding)
